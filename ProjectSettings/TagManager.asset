@@ -9,6 +9,7 @@ TagManager:
   - Line
   - Limit
   - Bubble
+  - Wall
   layers:
   - Default
   - TransparentFX
