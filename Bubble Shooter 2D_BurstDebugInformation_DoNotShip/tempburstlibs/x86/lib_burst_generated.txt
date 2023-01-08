@@ -163,9 +163,9 @@ Library: lib_burst_generated
 --root-assembly=D:\Unity\Bubble Shooter 2D\Temp\StagingArea\Data\Managed\Unity.Services.Core.Scheduler.dll
 --root-assembly=D:\Unity\Bubble Shooter 2D\Temp\StagingArea\Data\Managed\Unity.Postprocessing.Runtime.dll
 --root-assembly=D:\Unity\Bubble Shooter 2D\Temp\StagingArea\Data\Managed\Unity.2D.PixelPerfect.dll
---root-assembly=D:\Unity\Bubble Shooter 2D\Temp\StagingArea\Data\Managed\Assembly-CSharp.dll
 --root-assembly=D:\Unity\Bubble Shooter 2D\Temp\StagingArea\Data\Managed\Unity.Services.Core.Device.dll
 --root-assembly=D:\Unity\Bubble Shooter 2D\Temp\StagingArea\Data\Managed\Unity.Services.Core.Analytics.dll
+--root-assembly=D:\Unity\Bubble Shooter 2D\Temp\StagingArea\Data\Managed\Assembly-CSharp.dll
 --root-assembly=D:\Unity\Bubble Shooter 2D\Temp\StagingArea\Data\Managed\Unity.2D.IK.Runtime.dll
 --root-assembly=D:\Unity\Bubble Shooter 2D\Temp\StagingArea\Data\Managed\Unity.2D.Tilemap.Extras.dll
 --root-assembly=D:\Unity\Bubble Shooter 2D\Temp\StagingArea\Data\Managed\Unity.Services.Core.Threading.dll

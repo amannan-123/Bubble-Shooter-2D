@@ -11,15 +11,15 @@ public class GameManager : MonoBehaviour
 	private void Awake()
 	{
 		if (instance == null)
-		{
 			instance = this;
-		}
+
 		WinMenu.SetActive(false);
 		LoseMenu.SetActive(false);
 		levelsUI.SetActive(false);
 		sequenceBubbles = new List<Transform>();
 		connectedBubbles = new List<Transform>();
-		bubblesToDestroy = new List<Transform>();
+		bubblesToDrop = new List<Transform>();
+		bubblesToDissolve = new List<Transform>();
 		DontDestroyOnLoad(gameObject);
 	}
 	#endregion
@@ -28,8 +28,8 @@ public class GameManager : MonoBehaviour
 
 	private List<Transform> sequenceBubbles;
 	private List<Transform> connectedBubbles;
-	private List<Transform> bubblesToDestroy;
-	public float RayDistance = 200f;
+	private List<Transform> bubblesToDrop;
+	private List<Transform> bubblesToDissolve;
 	public Shooter shootScript;
 	public GameObject explosionPrefab;
 	public GameObject WinMenu;
@@ -43,9 +43,57 @@ public class GameManager : MonoBehaviour
 	public GameObject levelsUI;
 	public GameObject LightObj;
 	public Transform bottomLimit;
-	public float gravityScale = 1f;
+	public float dropSpeed = 50f;
 	public string gameState = "play";
 	private bool hitABomb = false;
+	public bool isDissolving = false;
+	public float dissolveSpeed = 2f;
+	public float RayDistance = 200f;
+
+	private void Update()
+	{
+		if (isDissolving)
+		{
+			foreach (Transform bubble in bubblesToDissolve)
+			{
+
+				if (bubble == null)
+				{
+					//make sure every bubble disappeared before ending the dissolve
+					if (bubblesToDissolve.IndexOf(bubble) == bubblesToDissolve.Count - 1)
+					{
+						isDissolving = false;
+						EmptyDissolveList();
+						break;
+					}
+					else continue;
+				}
+
+				SpriteRenderer spriteRenderer = bubble.GetComponent<SpriteRenderer>();
+				float dissolveAmount = spriteRenderer.material.GetFloat("_DissolveAmount");
+
+				if (dissolveAmount >= 0.99f)
+				{
+					isDissolving = false;
+					EmptyDissolveList();
+					break;
+				}
+				else
+				{
+					float newDissolve = dissolveAmount + dissolveSpeed * Time.deltaTime;
+					spriteRenderer.material.SetFloat("_DissolveAmount", newDissolve);
+				}
+			}
+		}
+	}
+
+	private void EmptyDissolveList()
+	{
+		foreach (Transform bubble in bubblesToDissolve)
+			if (bubble != null) Destroy(bubble.gameObject);
+
+		bubblesToDissolve.Clear();
+	}
 
 	public void ToggleGameState()
 	{
@@ -152,42 +200,14 @@ public class GameManager : MonoBehaviour
 		}
 	}
 
-	private void ProcessSpecialBubbles(Transform currentBubble)
-	{
-		Bubble bubbleScript = currentBubble.GetComponent<Bubble>();
-		List<Transform> neighbors = bubbleScript.GetNeighbors();
-
-		foreach (Transform t in neighbors)
-		{
-			Bubble bScript = t.GetComponent<Bubble>();
-
-			if (bScript.bubbleColor == Bubble.BubbleColor.Bomb)
-			{
-				hitABomb = true;
-				GameObject explosion = Instantiate(explosionPrefab, t.position, Quaternion.identity);
-				explosion.transform.localScale = new Vector3(25f, 25f, 1f);
-				Destroy(explosion, 0.5f);
-
-				Destroy(t.gameObject);
-
-				foreach (Transform t2 in bScript.GetNeighbors())
-				{
-					if (sequenceBubbles.Contains(t2)) sequenceBubbles.Remove(t2);
-					Destroy(t2.gameObject);
-				}
-			}
-
-		}
-	}
-
 	private void CheckBubbleSequence(Transform currentBubble)
 	{
 		sequenceBubbles.Add(currentBubble);
 
 		Bubble bubbleScript = currentBubble.GetComponent<Bubble>();
-		List<Transform> neighbors = bubbleScript.GetNeighbors();
+		List<Transform> neighbours = bubbleScript.GetNeighbours();
 
-		foreach (Transform t in neighbors)
+		foreach (Transform t in neighbours)
 		{
 			if (!sequenceBubbles.Contains(t))
 			{
@@ -201,6 +221,42 @@ public class GameManager : MonoBehaviour
 		}
 	}
 
+	private void ProcessSpecialBubbles(Transform currentBubble)
+	{
+		Bubble bubbleScript = currentBubble.GetComponent<Bubble>();
+		List<Transform> neighbours = bubbleScript.GetNeighbours();
+
+		foreach (Transform t in neighbours)
+		{
+			Bubble bScript = t.GetComponent<Bubble>();
+
+			if (bScript.bubbleColor == Bubble.BubbleColor.Bomb)
+			{
+				hitABomb = true;
+
+				//create explosion effect
+				GameObject explosion = Instantiate(explosionPrefab, t.position, Quaternion.identity);
+				explosion.transform.localScale = new Vector3(25f, 25f, 1f);
+				Destroy(explosion, 0.5f);
+
+				//destroy the bomb
+				Destroy(t.gameObject);
+
+				//destroy the neighbours of bomb
+				foreach (Transform t2 in bScript.GetNeighbours())
+				{
+					if (sequenceBubbles.Contains(t2))
+						sequenceBubbles.Remove(t2);
+
+					Destroy(t2.gameObject);
+				}
+
+				ScoreManager.GetInstance().AddScore(10);
+			}
+
+		}
+	}
+
 	private void ProcessBubblesInSequence()
 	{
 		if (hitABomb)
@@ -210,13 +266,16 @@ public class GameManager : MonoBehaviour
 
 		foreach (Transform t in sequenceBubbles)
 		{
-			if (!bubblesToDestroy.Contains(t))
+			if (!bubblesToDissolve.Contains(t))
 			{
 				ScoreManager.GetInstance().AddScore(1);
 				t.tag = "Untagged";
-				bubblesToDestroy.Add(t);
+				t.SetParent(null);
+				t.GetComponent<CircleCollider2D>().enabled = false;
+				bubblesToDissolve.Add(t);
 			}
 		}
+		isDissolving = true;
 	}
 
 	#region Drop Disconected Bubbles
@@ -257,7 +316,7 @@ public class GameManager : MonoBehaviour
 		Bubble bubbleScript = bubble.GetComponent<Bubble>();
 		bubbleScript.isConnected = true;
 
-		foreach (Transform t in bubbleScript.GetNeighbors())
+		foreach (Transform t in bubbleScript.GetNeighbours())
 		{
 			if (!connectedBubbles.Contains(t))
 			{
@@ -273,11 +332,11 @@ public class GameManager : MonoBehaviour
 			Bubble bubbleScript = bubble.GetComponent<Bubble>();
 			if (!bubbleScript.isConnected)
 			{
-				if (!bubblesToDestroy.Contains(bubble))
+				if (!bubblesToDrop.Contains(bubble))
 				{
 					ScoreManager.GetInstance().AddScore(2);
 					bubble.tag = "Untagged";
-					bubblesToDestroy.Add(bubble);
+					bubblesToDrop.Add(bubble);
 				}
 			}
 		}
@@ -285,7 +344,7 @@ public class GameManager : MonoBehaviour
 
 	private void DropAll()
 	{
-		foreach (Transform bubble in bubblesToDestroy)
+		foreach (Transform bubble in bubblesToDrop)
 		{
 			bubble.SetParent(null);
 			//Destroy(bubble.gameObject);
@@ -293,14 +352,13 @@ public class GameManager : MonoBehaviour
 			if (!bubble.GetComponent<Rigidbody2D>())
 			{
 				Rigidbody2D rig = (Rigidbody2D)bubble.gameObject.AddComponent(typeof(Rigidbody2D));
-				rig.gravityScale = gravityScale;
+				rig.gravityScale = dropSpeed;
 			}
 		}
-		bubblesToDestroy.Clear();
+		bubblesToDrop.Clear();
 	}
 
 	#endregion
-
 	public void OnDrawGizmosSelected()
 	{
 		Gizmos.color = Color.red;
