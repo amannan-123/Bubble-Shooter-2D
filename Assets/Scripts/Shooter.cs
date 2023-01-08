@@ -9,6 +9,7 @@ public class Shooter : MonoBehaviour
 	public Transform nextBubblePosition;
 	public GameObject currentBubble;
 	public GameObject nextBubble;
+	public GameObject bottomShootPoint;
 
 	private Vector2 lookDirection;
 	private float lookAngle;
@@ -33,7 +34,7 @@ public class Shooter : MonoBehaviour
 			lookAngle = Mathf.Atan2(lookDirection.y, lookDirection.x) * Mathf.Rad2Deg;
 
 			if (Input.GetMouseButton(0)
-				&& (Camera.main.ScreenToWorldPoint(Input.mousePosition).y > transform.position.y)
+				&& (Camera.main.ScreenToWorldPoint(Input.mousePosition).y > bottomShootPoint.transform.position.y)
 				&& (Camera.main.ScreenToWorldPoint(Input.mousePosition).y < limit.transform.position.y))
 			{
 				line.transform.position = transform.position;
@@ -55,7 +56,7 @@ public class Shooter : MonoBehaviour
 
 			if (canShoot
 				&& Input.GetMouseButtonUp(0)
-				&& (Camera.main.ScreenToWorldPoint(Input.mousePosition).y > transform.position.y)
+				&& (Camera.main.ScreenToWorldPoint(Input.mousePosition).y > bottomShootPoint.transform.position.y)
 				&& (Camera.main.ScreenToWorldPoint(Input.mousePosition).y < limit.transform.position.y))
 			{
 				canShoot = false;
